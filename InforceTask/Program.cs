@@ -37,7 +37,6 @@ builder.Services.AddControllersWithViews();
 
 builder.Services.AddRazorPages(options =>
 {
-    
     options.Conventions.AllowAnonymousToAreaPage("Identity", "/Account/Login");
     options.Conventions.AllowAnonymousToAreaPage("Identity", "/Account/Register");
     options.Conventions.AllowAnonymousToAreaPage("Identity", "/Account/ForgotPassword");
@@ -45,6 +44,7 @@ builder.Services.AddRazorPages(options =>
 });
 
 builder.Services.AddTransient<IHomeService, HomeService>();
+builder.Services.AddTransient<IUrlShortenerService, UrlShortenerService>();
 
 var app = builder.Build();
 
