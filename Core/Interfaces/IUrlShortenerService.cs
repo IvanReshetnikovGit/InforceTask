@@ -1,5 +1,4 @@
 using BusinessLogic.DTOs;
-using DataAccess.Entities;
 using Microsoft.AspNetCore.Http;
 
 namespace BusinessLogic.Interfaces
