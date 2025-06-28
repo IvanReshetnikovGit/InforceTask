@@ -17,4 +17,15 @@ public class HomeService : IHomeService
     {
         return await _context.Urls.ToListAsync();
     }
+    public async Task DeleteUrlAsync(int id)
+    {
+        var url = await _context.Urls.FindAsync(id);
+        if (url == null)
+        {
+            throw new KeyNotFoundException("URL not found");
+        }
+        
+        _context.Urls.Remove(url);
+        await _context.SaveChangesAsync();
+    }
 }

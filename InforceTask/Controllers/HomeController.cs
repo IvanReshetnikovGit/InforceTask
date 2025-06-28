@@ -2,28 +2,83 @@ using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using InforceTask.Models;
 using DataAccess.Data;
+using BusinessLogic.Interfaces;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+using BusinessLogic.DTOs;
 
 namespace InforceTask.Controllers;
 
 public class HomeController : Controller
 {
     private readonly AppDbContext _context;
+    private readonly IHomeService _homeService;
+    private readonly IUrlShortenerService _urlShortenerService;
 
-    public HomeController(AppDbContext context)
+    public HomeController(AppDbContext context, IHomeService homeService, IUrlShortenerService urlShortenerService)
     {
+        _homeService = homeService;
         _context = context;
-        
+        _urlShortenerService = urlShortenerService;
+
     }
 
     public IActionResult Index()
     {
         return View();
     }
-
-    public IActionResult Privacy()
+    [HttpDelete]
+    public async Task<JsonResult> DeleteUrl(int id)
     {
-        return View();
+        try
+        {
+            await _homeService.DeleteUrlAsync(id);
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = ex.Message });
+        }
+        
+        return Json(new { success = true });
     }
+    [HttpPost]
+    public async Task<JsonResult> ShortenUrl([FromBody] ShortenUrlResult request)
+    {
+        var result = await _urlShortenerService.TryShortenAsync(request.originalUrl, request.userId, HttpContext);
+
+        return Json(result);
+    }
+
+    [HttpGet("/{shortKey}")]
+    public async Task<IActionResult> RedirectToOriginal(string shortKey)
+    {
+        var url = await _context.Urls
+            .FirstOrDefaultAsync(u => u.ShortenedUrl == shortKey);
+
+        if (url == null)
+            return NotFound();
+
+        return Redirect(url.OriginalUrl);
+    }
+
+
+    [HttpGet]
+    public IActionResult GetUrls()
+    {
+        var urls = _context.Urls
+            .AsNoTracking()
+            .Select(u => new
+            {
+                u.Id,
+                u.OriginalUrl,
+                u.UserId,
+                ShortenedUrl = $"{Request.Scheme}://{Request.Host}/{u.ShortenedUrl}",
+            })
+            .ToList();
+
+        return Json(urls);
+    }
+
 
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult Error()

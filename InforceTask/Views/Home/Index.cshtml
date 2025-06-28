@@ -1,7 +1,139 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+﻿@using Microsoft.AspNetCore.Identity
+@inject UserManager<IdentityUser> UserManager
+
+@{
+    ViewData["Title"] = "URLs";
+    var userId = User.Identity.IsAuthenticated ? UserManager.GetUserId(User) : "";
+    var isAdmin = User.Identity.IsAuthenticated && User.IsInRole("Admin");
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.8.3/angular.min.js"></script>
+
+<div ng-app="urlApp" ng-controller="UrlController"
+    <div ng-init="currentUserId='@userId'; isAdmin=@(isAdmin.ToString().ToLower())">
+    <h2>List of URLs</h2>
+    @if(User.Identity.IsAuthenticated)
+    {
+        <div class="mb-3">
+            <label for="newUrl" class="form-label">Add new URL</label>
+            <input type="text" id="newUrl" class="form-control" ng-model="newUrl" placeholder="Введите URL">
+            <button class="btn btn-primary mt-2" ng-click="addUrl()">Add</button>
+        </div>
+    }
+    <div ng-if="loading">Loading...</div>
+    <div ng-if="error" class="alert alert-danger">{{error}}</div>
+    
+    <table class="table table-striped" ng-if="!loading">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>old url</th>
+                <th>new url</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr ng-repeat="url in urls">
+                <td>{{url.id}}</td>
+                <td><a href="{{url.originalUrl}}" target="_blank">{{url.originalUrl}}</td>
+                <td><a href="{{url.shortenedUrl}}" target="_blank">{{url.shortenedUrl}}</a></td>
+
+                <td>
+
+                    <button class="btn btn-danger btn-sm" ng-disabled="!currentUserId || (url.userId !== currentUserId && !isAdmin)"
+                            ng-click="deleteUrl(url.id)">
+                        Delete
+                    </button>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <div ng-if="urls.length === 0 && !loading" class="alert alert-info">
+        No URLs found. Please add a new URL.
+    </div>
 </div>
+
+<script>
+    angular.module('urlApp', [])
+    .controller('UrlController', function($scope, $http) {
+        $scope.urls = [];
+        $scope.loading = true;
+        $scope.error = '';
+        $scope.newUrl = '';
+        
+        $scope.loadUrls = function() {
+            $scope.loading = true;
+            $scope.error = '';
+            
+            $http.get('@Url.Action("GetUrls", "Home")')
+            .then(function(response) {
+                $scope.urls = response.data;
+                $scope.loading = false;
+            })
+            .catch(function(error) {
+                $scope.error = 'Error loading URLs';
+                $scope.loading = false;
+                console.error('Error:', error);
+            });
+        };
+        
+        // Удаление URL
+        $scope.deleteUrl = function(id) {
+            if (confirm('Are you sure?')) {
+                $http.delete('@Url.Action("DeleteUrl", "Home")/' + id)
+                .then(function() {
+                    $scope.urls = $scope.urls.filter(function(url) {
+                        return url.id !== id;
+                    });
+                })
+                .catch(function(error) {
+                    $scope.error = 'Error deleting URL';
+                    console.error('Delete error:', error);
+                });
+            }
+        };
+        $scope.addUrl = function () {
+            if (!$scope.newUrl) {
+                alert('Enter URL!');
+                return;
+            }
+
+            const payload = {
+                originalUrl: $scope.newUrl,
+                UserId: '@UserManager.GetUserId(User)' // Получаем UserId из Razor
+            };
+
+            $http.post('@Url.Action("ShortenUrl", "Home")', payload)
+                .then(function (response) {
+                    if (response.data.success) {
+                        // Убедимся, что пришли все нужные данные
+                        const newEntry = {
+                            id: response.data.id,
+                            originalUrl: response.data.originalUrl,
+                            shortenedUrl: response.data.shortenedUrl,
+                            userId: response.data.userId
+                        };
+
+                        // Проверка на дубликаты (если сервер всё же вернул дубликат)
+                        const alreadyExists = $scope.urls.some(u => u.shortenedUrl === newEntry.shortenedUrl);
+                        if (!alreadyExists) {
+                            $scope.urls.push(newEntry);
+                        }
+
+                        $scope.newUrl = '';
+                        $scope.error = '';
+                    } else {
+                        // Показываем ошибку, если есть
+                        $scope.error = response.data.message || 'Error shortening URL';
+                    }
+                })
+                .catch(function (error) {
+                    $scope.error = error.data?.message || 'Error adding URL';
+                    console.error('Add error:', error);
+                });
+        };
+
+        $scope.loadUrls();
+    });
+</script>
