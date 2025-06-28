@@ -29,6 +29,10 @@ public class HomeController : Controller
     {
         return View();
     }
+    public IActionResult About()
+    {
+        return View();
+    }
     [HttpDelete]
     public async Task<JsonResult> DeleteUrl(int id)
     {
