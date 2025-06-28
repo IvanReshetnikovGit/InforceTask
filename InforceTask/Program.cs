@@ -1,9 +1,7 @@
 using BusinessLogic.Interfaces;
 using BusinessLogic.Services;
 using DataAccess.Data;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -35,13 +33,7 @@ builder.Services.ConfigureApplicationCookie(options =>
 
 builder.Services.AddControllersWithViews();
 
-builder.Services.AddRazorPages(options =>
-{
-    options.Conventions.AllowAnonymousToAreaPage("Identity", "/Account/Login");
-    options.Conventions.AllowAnonymousToAreaPage("Identity", "/Account/Register");
-    options.Conventions.AllowAnonymousToAreaPage("Identity", "/Account/ForgotPassword");
-    options.Conventions.AllowAnonymousToAreaPage("Identity", "/Account/ResetPassword");
-});
+builder.Services.AddRazorPages();
 
 builder.Services.AddTransient<IHomeService, HomeService>();
 builder.Services.AddTransient<IUrlShortenerService, UrlShortenerService>();

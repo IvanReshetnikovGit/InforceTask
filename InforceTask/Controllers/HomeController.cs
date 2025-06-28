@@ -5,7 +5,6 @@ using DataAccess.Data;
 using BusinessLogic.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using BusinessLogic.DTOs;
-using Microsoft.AspNetCore.Identity;
 
 namespace InforceTask.Controllers;
 
@@ -14,18 +13,20 @@ public class HomeController : Controller
     private readonly AppDbContext _context;
     private readonly IHomeService _homeService;
     private readonly IUrlShortenerService _urlShortenerService;
-    private readonly UserManager<IdentityUser> _userManager;
 
-    public HomeController(AppDbContext context, IHomeService homeService, IUrlShortenerService urlShortenerService, UserManager<IdentityUser> userManager)
+    public HomeController(AppDbContext context, IHomeService homeService, IUrlShortenerService urlShortenerService)
     {
         _homeService = homeService;
         _context = context;
         _urlShortenerService = urlShortenerService;
-        _userManager = userManager;
 
     }
 
     public IActionResult Index()
+    {
+        return View();
+    }
+    public IActionResult About()
     {
         return View();
     }
@@ -44,7 +45,7 @@ public class HomeController : Controller
         return Json(new { success = true });
     }
     [HttpPost]
-    public async Task<JsonResult> ShortenUrl([FromBody] ShortenUrlResult request)
+    public async Task<JsonResult> ShortenUrl([FromBody] ShortenUrlResultDto request)
     {
         var result = await _urlShortenerService.TryShortenAsync(request.originalUrl, request.userId, HttpContext);
 

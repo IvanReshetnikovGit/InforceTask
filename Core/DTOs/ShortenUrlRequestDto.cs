@@ -1,5 +1,5 @@
 namespace BusinessLogic.DTOs;
-public class ShortenUrlResult
+public class ShortenUrlResultDto
 {
     public bool success { get; set; }
     public string message { get; set; }
