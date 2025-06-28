@@ -39,11 +39,16 @@
                 <td><a href="{{url.shortenedUrl}}" target="_blank">{{url.shortenedUrl}}</a></td>
 
                 <td>
-
                     <button class="btn btn-danger btn-sm" ng-disabled="!currentUserId || (url.userId !== currentUserId && !isAdmin)"
                             ng-click="deleteUrl(url.id)">
                         Delete
                     </button>
+                    @if (User.Identity.IsAuthenticated)
+                    {
+                        <button class="btn btn-secondary btn-sm" ng-click="ShortUrlInfo(url.id)">
+                            Short URL Info
+                        </button>
+                    }
                 </td>
             </tr>
         </tbody>
@@ -51,6 +56,28 @@
     
     <div ng-if="urls.length === 0 && !loading" class="alert alert-info">
         No URLs found. Please add a new URL.
+    </div>
+
+    <div class="modal fade" id="shortUrlModal" tabindex="-1" aria-labelledby="shortUrlModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="shortUrlModalLabel">Short URL Info</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p><strong>Original URL:</strong> {{modalData.originalUrl}}</p>
+                <p><strong>Shortened URL:</strong> 
+                    <a ng-href="{{modalData.shortenedUrl}}" target="_blank">{{modalData.shortenedUrl}}</a>
+                </p>
+                <p><strong>User Email:</strong> {{modalData.userEmail}}</p>
+                <p ng-if="modalData.created"><strong>Created At:</strong> {{modalData.created | date:'dd.MM.yyyy HH:mm'}}</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -133,7 +160,24 @@
                     console.error('Add error:', error);
                 });
         };
+        $scope.ShortUrlInfo = function(id) {
+            $http.get('@Url.Action("GetUrlInfo", "Home")/' + id)
+                .then(function(response) {
+                    $scope.modalData = response.data;
+
+                    var modalEl = document.getElementById('shortUrlModal');
+                    var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                    console.log("Modal Data:", $scope.modalData);
+                    modal.show();
+                })
+                .catch(function(error) {
+                    console.error('Error loading info:', error);
+                    $scope.error = 'Failed to load URL info';
+                });
+        };
+
 
         $scope.loadUrls();
     });
+    
 </script>

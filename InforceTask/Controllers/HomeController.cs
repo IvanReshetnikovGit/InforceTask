@@ -3,9 +3,9 @@ using Microsoft.AspNetCore.Mvc;
 using InforceTask.Models;
 using DataAccess.Data;
 using BusinessLogic.Interfaces;
-using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using BusinessLogic.DTOs;
+using Microsoft.AspNetCore.Identity;
 
 namespace InforceTask.Controllers;
 
@@ -14,12 +14,14 @@ public class HomeController : Controller
     private readonly AppDbContext _context;
     private readonly IHomeService _homeService;
     private readonly IUrlShortenerService _urlShortenerService;
+    private readonly UserManager<IdentityUser> _userManager;
 
-    public HomeController(AppDbContext context, IHomeService homeService, IUrlShortenerService urlShortenerService)
+    public HomeController(AppDbContext context, IHomeService homeService, IUrlShortenerService urlShortenerService, UserManager<IdentityUser> userManager)
     {
         _homeService = homeService;
         _context = context;
         _urlShortenerService = urlShortenerService;
+        _userManager = userManager;
 
     }
 
@@ -78,8 +80,16 @@ public class HomeController : Controller
 
         return Json(urls);
     }
+    [HttpGet("Home/GetUrlInfo/{id}")]
+    public async Task<IActionResult> GetUrlInfo(int id)
+    {
+        var info = await _homeService.GetUrlInfoAsync(id, HttpContext);
 
+        if (info == null)
+            return NotFound();
 
+        return Json(info);
+    }
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult Error()
     {
