@@ -15,7 +15,7 @@ namespace BusinessLogic.Services
             _dbContext = dbContext;
         }
 
-        public async Task<ShortenUrlResult> TryShortenAsync(string originalUrl, string userId, HttpContext httpContext)
+        public async Task<ShortenUrlResultDto> TryShortenAsync(string originalUrl, string userId, HttpContext httpContext)
         {
             var existing = await _dbContext.Urls
                 .AsNoTracking()
@@ -23,7 +23,7 @@ namespace BusinessLogic.Services
 
             if (existing != null)
             {
-                return new ShortenUrlResult { success = false, message = "This URL already exists." };
+                return new ShortenUrlResultDto { success = false, message = "This URL already exists." };
             }
 
             var shortKey = GenerateShortUrl();
@@ -37,7 +37,7 @@ namespace BusinessLogic.Services
             await _dbContext.Urls.AddAsync(newUrl);
             await _dbContext.SaveChangesAsync();
 
-            return new ShortenUrlResult
+            return new ShortenUrlResultDto
             {
                 success = true,
                 id = newUrl.Id,

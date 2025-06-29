@@ -3,16 +3,16 @@
 
 @{
     ViewData["Title"] = "URLs";
-    var userId = User.Identity.IsAuthenticated ? UserManager.GetUserId(User) : "";
-    var isAdmin = User.Identity.IsAuthenticated && User.IsInRole("Admin");
+    var userId = (User.Identity != null && User.Identity.IsAuthenticated) ? UserManager.GetUserId(User) : "";
+    var isAdmin = (User.Identity != null && User.Identity.IsAuthenticated) && User.IsInRole("Admin");
 }
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.8.3/angular.min.js"></script>
 
-<div ng-app="urlApp" ng-controller="UrlController"
-    <div ng-init="currentUserId='@userId'; isAdmin=@(isAdmin.ToString().ToLower())">
+<div ng-app="urlApp" ng-controller="UrlController" 
+        ng-init="currentUserId='@userId'; isAdmin=@(isAdmin.ToString().ToLower())">
     <h2>List of URLs</h2>
-    @if(User.Identity.IsAuthenticated)
+    @if(User.Identity != null && User.Identity.IsAuthenticated)
     {
         <div class="mb-3">
             <label for="newUrl" class="form-label">Add new URL</label>
@@ -43,7 +43,7 @@
                             ng-click="deleteUrl(url.id)">
                         Delete
                     </button>
-                    @if (User.Identity.IsAuthenticated)
+                    @if (User.Identity != null && User.Identity.IsAuthenticated)
                     {
                         <button class="btn btn-secondary btn-sm" ng-click="ShortUrlInfo(url.id)">
                             Short URL Info
@@ -105,7 +105,6 @@
             });
         };
         
-        // Удаление URL
         $scope.deleteUrl = function(id) {
             if (confirm('Are you sure?')) {
                 $http.delete('@Url.Action("DeleteUrl", "Home")/' + id)
@@ -128,13 +127,12 @@
 
             const payload = {
                 originalUrl: $scope.newUrl,
-                UserId: '@UserManager.GetUserId(User)' // Получаем UserId из Razor
+                UserId: '@userId'
             };
 
             $http.post('@Url.Action("ShortenUrl", "Home")', payload)
                 .then(function (response) {
                     if (response.data.success) {
-                        // Убедимся, что пришли все нужные данные
                         const newEntry = {
                             id: response.data.id,
                             originalUrl: response.data.originalUrl,
@@ -142,7 +140,6 @@
                             userId: response.data.userId
                         };
 
-                        // Проверка на дубликаты (если сервер всё же вернул дубликат)
                         const alreadyExists = $scope.urls.some(u => u.shortenedUrl === newEntry.shortenedUrl);
                         if (!alreadyExists) {
                             $scope.urls.push(newEntry);
@@ -151,7 +148,6 @@
                         $scope.newUrl = '';
                         $scope.error = '';
                     } else {
-                        // Показываем ошибку, если есть
                         $scope.error = response.data.message || 'Error shortening URL';
                     }
                 })
